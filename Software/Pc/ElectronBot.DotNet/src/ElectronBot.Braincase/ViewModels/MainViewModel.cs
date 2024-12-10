@@ -291,78 +291,60 @@ public partial class MainViewModel : ObservableRecipient, INavigationAware
     [RelayCommand]
     private async Task StartChat()
     {
-        // 从本地设置服务中读取 CustomClockTitleConfig 配置，如果未找到则创建一个新的实例。
         var config = (await _localSettingsService.ReadSettingAsync<CustomClockTitleConfig>
             (Constants.CustomClockTitleConfigKey)) ?? new CustomClockTitleConfig();
 
-        // 将配置中的 AnswerText 字段按逗号分割，并转换为列表。
         var textList = config.AnswerText.Split(",").ToList();
 
-        // 生成一个随机数，范围是 textList 列表的元素数量。
         var r = new Random().Next(textList.Count);
 
-        // 根据随机数选择列表中的一个文本。
         var text = textList[r];
 
-        // 显示选择的文本作为 Toast 消息，持续 4 秒。
         ToastHelper.SendToast(text, TimeSpan.FromSeconds(4));
 
-        // 获取本地设置服务实例。
         var localSettingsService = App.GetService<ILocalSettingsService>();
 
-        // 从本地设置服务中读取 EmoticonAction 列表配置，如果未找到则创建一个新的空列表。
         var list = (await _localSettingsService
             .ReadSettingAsync<List<EmoticonAction>>(Constants.EmojisActionListKey)) ?? new List<EmoticonAction>();
 
-        // 如果列表中没有默认表情（EmojisType 为 Default），则保存默认的表情动作列表。
         if (!list.Any(a => a.EmojisType == EmojisType.Default))
         {
             var emoticonActions = Constants.EMOJI_ACTION_LIST;
-            // 异步保存默认表情动作列表到本地设置中。
             await _localSettingsService.SaveSettingAsync(Constants.EmojisActionListKey, emoticonActions.ToList());
             list = emoticonActions.ToList();
         }
 
-        // 如果列表不为空且有数据，则执行以下操作。
         if (list != null && list.Count > 0)
         {
             try
             {
-                // 获取名称为 "normal" 的表情。
                 var emojis = list.First(l => l.NameId == "normal");
 
-                // 创建一个空的动作列表，用于存储表情动作。
                 List<ElectronBotAction> actions = new();
 
-                // 如果表情有相关动作（HasAction 为 true），继续执行。
                 if (emojis.HasAction)
                 {
-                    // 检查表情的动作路径是否为空或空白。
                     if (!string.IsNullOrWhiteSpace(emojis.EmojisActionPath))
                     {
                         try
                         {
-                            // 初始化动作文件路径。
                             var path = string.Empty;
 
-                            // 如果表情类型是默认类型，则从应用的安装位置加载文件。
                             if (emojis.EmojisType == EmojisType.Default)
                             {
                                 path = Package.Current.InstalledLocation.Path + $"\\Assets\\Emoji\\{emojis.EmojisActionPath}";
                             }
                             else
                             {
-                                // 否则，使用自定义路径。
                                 path = emojis.EmojisActionPath;
                             }
 
-                            // 异步读取 JSON 文件的内容。
+
                             var json = await File.ReadAllTextAsync(path);
 
-                            // 将 JSON 内容反序列化为 ElectronBotAction 列表。
+
                             var actionList = JsonSerializer.Deserialize<List<ElectronBotAction>>(json);
 
-                            // 如果反序列化后的列表不为空且有数据，则将其赋值给 actions。
                             if (actionList != null && actionList.Count > 0)
                             {
                                 actions = actionList;
@@ -370,66 +352,51 @@ public partial class MainViewModel : ObservableRecipient, INavigationAware
                         }
                         catch (Exception)
                         {
-                            // 捕获读取文件或解析 JSON 时的异常，但不做处理。
+
                         }
                     }
                 }
 
-                // 声明一个用于存储视频路径的变量。
                 string? videoPath;
 
-                // 根据表情类型设置视频路径。
                 if (emojis.EmojisType == EmojisType.Default)
                 {
-                    // 如果表情类型为默认类型，则使用应用安装位置的文件路径。
                     videoPath = Package.Current.InstalledLocation.Path + $"\\Assets\\Emoji\\{emojis.NameId}.mp4";
                 }
                 else
                 {
-                    // 否则，使用自定义的视频路径。
                     videoPath = emojis.EmojisVideoPath;
                 }
-
-                // 播放选中的文本作为 TTS（文本到语音）音频，允许中断。
                 _ = ElectronBotHelper.Instance.MediaPlayerPlaySoundByTtsAsync(text, true);
-
-                // 异步播放表情的动作表达。
                 await App.GetService<IActionExpressionProvider>().PlayActionExpressionAsync(emojis, actions);
             }
             catch (Exception)
             {
-                // 捕获外部 try 块的异常，但不做处理。
             }
         }
     }
 
+
     [RelayCommand]
     private async Task SendChat()
     {
-        // 从本地设置服务中读取 CustomClockTitleConfig 配置，如果读取失败则创建一个新的实例。
         var config = (await _localSettingsService.ReadSettingAsync<CustomClockTitleConfig>
             (Constants.CustomClockTitleConfigKey)) ?? new CustomClockTitleConfig();
 
-        // 将配置中的 AnswerText 字段按逗号分割，并转为列表。
         var textList = config.AnswerText.Split(",").ToList();
 
-        // 创建一个随机数生成器，并随机选择 textList 列表中的一个索引。
         var r = new Random().Next(textList.Count);
 
-        // 从 textList 中获取随机选择的文本。
+
         var text = textList[r];
 
-        // 显示“please wait for a moment”提示消息，持续 4 秒。
         ToastHelper.SendToast("please wait for a moment", TimeSpan.FromSeconds(4));
 
-        // 获取本地设置服务实例。
         var localSettingsService = App.GetService<ILocalSettingsService>();
 
-        // 从本地设置服务中读取 EmoticonAction 列表配置，如果读取失败则创建一个新的空列表。
         var list = (await _localSettingsService
             .ReadSettingAsync<List<EmoticonAction>>(Constants.EmojisActionListKey)) ?? new List<EmoticonAction>();
 
-        // 如果列表中没有默认表情（EmojisType 为 Default），则保存默认的 EMOJI_ACTION_LIST。
         if (!list.Any(a => a.EmojisType == EmojisType.Default))
         {
             var emoticonActions = Constants.EMOJI_ACTION_LIST;
@@ -437,46 +404,37 @@ public partial class MainViewModel : ObservableRecipient, INavigationAware
             list = emoticonActions.ToList();
         }
 
-        // 如果 list 不为空且有数据，执行以下操作。
         if (list != null && list.Count > 0)
         {
             try
             {
-                // 获取名称为 "normal" 的表情。
                 var emojis = list.First(l => l.NameId == "normal");
 
-                // 创建一个新的 ElectronBotAction 列表，用于存储表情的动作。
                 List<ElectronBotAction> actions = new();
 
-                // 如果表情有动作（HasAction 为 true）。
                 if (emojis.HasAction)
                 {
-                    // 检查表情的动作路径是否为空或空白。
                     if (!string.IsNullOrWhiteSpace(emojis.EmojisActionPath))
                     {
                         try
                         {
-                            // 初始化动作文件路径。
                             var path = string.Empty;
 
-                            // 如果表情类型是默认类型，则从应用的安装位置加载文件。
                             if (emojis.EmojisType == EmojisType.Default)
                             {
                                 path = Package.Current.InstalledLocation.Path + $"\\Assets\\Emoji\\{emojis.EmojisActionPath}";
                             }
                             else
                             {
-                                // 否则，使用自定义路径。
                                 path = emojis.EmojisActionPath;
                             }
 
-                            // 异步读取 JSON 文件的内容。
+
                             var json = await File.ReadAllTextAsync(path);
 
-                            // 反序列化 JSON 内容为 ElectronBotAction 列表。
+
                             var actionList = JsonSerializer.Deserialize<List<ElectronBotAction>>(json);
 
-                            // 如果反序列化的列表不为空且有数据，则将其赋值给 actions。
                             if (actionList != null && actionList.Count > 0)
                             {
                                 actions = actionList;
@@ -484,68 +442,59 @@ public partial class MainViewModel : ObservableRecipient, INavigationAware
                         }
                         catch (Exception)
                         {
-                            // 捕获读取或解析 JSON 时的异常，但不做处理。
+
                         }
                     }
                 }
 
-                // 声明一个视频路径变量。
                 string? videoPath;
 
-                // 根据表情类型决定视频路径。
                 if (emojis.EmojisType == EmojisType.Default)
                 {
-                    // 如果是默认类型，则使用安装位置的文件路径。
                     videoPath = Package.Current.InstalledLocation.Path + $"\\Assets\\Emoji\\{emojis.NameId}.mp4";
                 }
                 else
                 {
-                    // 否则，使用自定义的视频路径。
                     videoPath = emojis.EmojisVideoPath;
                 }
-
-                // 播放 "please wait for a moment" 的提示音。
                 _ = ElectronBotHelper.Instance.MediaPlayerPlaySoundByTtsAsync("please wait for a moment", false);
-
-                // 使用动作提供者异步播放表情的动作表达。
                 await App.GetService<IActionExpressionProvider>().PlayActionExpressionAsync(emojis, actions);
 
                 try
                 {
-                    // 获取聊天机器人客户端工厂服务。
+                    //var chatGPTClient = App.GetService<IChatGPTService>();
+
+                    //var resultText = await chatGPTClient.AskQuestionResultAsync(args.Result.Text);
+
+                    //await ElectronBotHelper.Instance.MediaPlayerPlaySoundByTTSAsync(resultText);
+
                     var chatBotClientFactory = App.GetService<IChatbotClientFactory>();
 
-                    // 从本地设置服务中读取默认聊天机器人的名称。
                     var chatBotClientName = (await App.GetService<ILocalSettingsService>()
                          .ReadSettingAsync<ComboxItemModel>(Constants.DefaultChatBotNameKey))?.DataKey;
 
-                    // 如果未找到聊天机器人名称，则抛出异常。
                     if (string.IsNullOrEmpty(chatBotClientName))
                     {
                         throw new Exception("no app key in the config");
                     }
 
-                    // 使用工厂方法创建聊天机器人客户端实例。
                     var chatBotClient = chatBotClientFactory.CreateChatbotClient(chatBotClientName);
 
-                    // 使用聊天机器人客户端发送问题，并异步获取回复文本。
                     var resultText = await chatBotClient.AskQuestionResultAsync(SendText);
 
-                    // 使用 ElectronBot 播放聊天机器人的回复音频。
                     await ElectronBotHelper.Instance.MediaPlayerPlaySoundByTtsAsync(resultText, false);
                 }
                 catch (Exception ex)
                 {
-                    // 如果发生异常，则在 UI 线程上显示错误信息的 Toast 消息，持续 3 秒。
                     App.MainWindow.DispatcherQueue.TryEnqueue(() =>
                     {
                         ToastHelper.SendToast(ex.Message, TimeSpan.FromSeconds(3));
                     });
+
                 }
             }
             catch (Exception)
             {
-                // 捕获外部 try 块的异常，但不做处理。
             }
         }
     }

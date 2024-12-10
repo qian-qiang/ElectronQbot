@@ -23,6 +23,7 @@
     <AppxBundle>Never</AppxBundle>
     <AppxPackageSigningEnabled>False</AppxPackageSigningEnabled>
     <AppxPackageSigningTimestampDigestAlgorithm>SHA256</AppxPackageSigningTimestampDigestAlgorithm>
+	<WindowsSdkPackageVersion>10.0.26100.38</WindowsSdkPackageVersion>
   </PropertyGroup>
   <ItemGroup>
     <Content Remove="Assets\alipay.JPG" />
